@@ -1,0 +1,32 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/wharfkit-common",
+    "crates/wharfkit-abicache",
+    "crates/wharfkit-contract",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["Aaron Cox <aaron@greymass.com>"]
+license = "AGPL-3.0-or-later"
+homepage = "https://github.com/wharfkit/wharfkit-rs"
+repository = "https://github.com/wharfkit/wharfkit-rs"
+keywords = ["antelope", "wharfkit", "telos", "wax", "vaulta"]
+
+[workspace.dependencies]
+antelope-client = "0.3.1"
+async-trait = "0.1"
+log = "0.4"
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread", "sync"] }
+
+# Internal cross-crate refs
+wharfkit-common = { version = "0.1.0", path = "crates/wharfkit-common" }
+wharfkit-abicache = { version = "0.1.0", path = "crates/wharfkit-abicache" }
+wharfkit-contract = { version = "0.1.0", path = "crates/wharfkit-contract" }
