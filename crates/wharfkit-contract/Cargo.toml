@@ -1,0 +1,26 @@
+[package]
+name = "wharfkit-contract"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+description = "ContractKit for WharfKit Rust"
+
+[dependencies]
+antelope-client = { workspace = true }
+async-trait = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+wharfkit-abicache = { workspace = true }
+wharfkit-common = { workspace = true }
+
+[dev-dependencies]
+# Generated test fixtures (tests/generated/eosio_token.rs) use these to parse
+# the embedded ABI blob; production wharfkit-contract code does not.
+hex = "0.4"
+serde_json = { workspace = true }

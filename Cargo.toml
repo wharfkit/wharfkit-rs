@@ -19,6 +19,7 @@ keywords = ["antelope", "wharfkit", "telos", "wax", "vaulta"]
 [workspace.dependencies]
 antelope-client = "0.3.1"
 async-trait = "0.1"
+dashmap = "6"
 log = "0.4"
 reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -30,3 +31,7 @@ tokio = { version = "1.0", features = ["macros", "rt-multi-thread", "sync"] }
 wharfkit-common = { version = "0.1.0", path = "crates/wharfkit-common" }
 wharfkit-abicache = { version = "0.1.0", path = "crates/wharfkit-abicache" }
 wharfkit-contract = { version = "0.1.0", path = "crates/wharfkit-contract" }
+
+[patch.crates-io]
+# Use the local fork of antelope-rs until our P0 patches land upstream.
+antelope-client = { path = "../antelope-rs/crates/antelope" }
