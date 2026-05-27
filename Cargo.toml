@@ -5,6 +5,7 @@ members = [
     "crates/wharfkit-abicache",
     "crates/wharfkit-contract",
     "crates/wharfkit-buoy-client",
+    "crates/wharfkit-signing-request",
 ]
 
 [workspace.package]
@@ -32,6 +33,7 @@ tokio = { version = "1.0", features = ["macros", "rt-multi-thread", "sync"] }
 wharfkit-common = { version = "0.1.0", path = "crates/wharfkit-common" }
 wharfkit-abicache = { version = "0.1.0", path = "crates/wharfkit-abicache" }
 wharfkit-contract = { version = "0.1.0", path = "crates/wharfkit-contract" }
+wharfkit-signing-request = { version = "0.1.0", path = "crates/wharfkit-signing-request" }
 
 [patch.crates-io]
 # Use the local fork of antelope-rs until our P0 patches land upstream.
