@@ -1,0 +1,29 @@
+[package]
+name = "wharfkit-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+description = "WharfKit CLI — codegen typed Rust modules from on-chain ABIs"
+
+[[bin]]
+name = "wharfkit-cli"
+path = "src/main.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+antelope-client = { workspace = true }
+anyhow = "1.0"
+clap = { version = "4", features = ["derive"] }
+hex = "0.4"
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+wharfkit-common = { workspace = true }

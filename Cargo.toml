@@ -9,6 +9,7 @@ members = [
     "crates/wharfkit-session",
     "crates/wharfkit-mock",
     "crates/wharfkit-wallet-plugin-anchor",
+    "crates/wharfkit-cli",
 ]
 
 [workspace.package]
