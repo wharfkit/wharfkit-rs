@@ -4,6 +4,7 @@ members = [
     "crates/wharfkit-common",
     "crates/wharfkit-abicache",
     "crates/wharfkit-contract",
+    "crates/wharfkit-buoy-client",
 ]
 
 [workspace.package]

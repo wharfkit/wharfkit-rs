@@ -1,0 +1,25 @@
+[package]
+name = "wharfkit-buoy-client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+description = "WharfKit Buoy client (HTTP + WebSocket) — Rust port"
+
+[dependencies]
+async-trait = { workspace = true }
+futures-util = "0.3"
+reqwest = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+axum = "0.7"
+tower = "0.4"
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "sync", "time"] }
