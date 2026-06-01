@@ -115,13 +115,6 @@ pub struct IdentityProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
-    use wharfkit_abicache::ABICache;
-
-    fn opts() -> EsrOptions {
-        EsrOptions::new(Arc::new(ABICache::new_offline()))
-    }
-
     #[test]
     fn create_with_keypair_emits_anchor_compatible_uri() {
         let priv_key =
@@ -142,7 +135,7 @@ mod tests {
                 app_name: "wharfkitgodot".into(),
                 user_agent: "@wharfkit-rs test".into(),
             },
-            &opts(),
+            &EsrOptions::offline(),
             priv_key,
             pub_key.clone(),
         )
@@ -152,7 +145,8 @@ mod tests {
         eprintln!("SAMPLE IDENTITY URI: {uri}");
         assert!(uri.starts_with("esr://"));
 
-        let parsed = crate::request::SigningRequest::from_uri(&uri, &opts()).unwrap();
+        let parsed =
+            crate::request::SigningRequest::from_uri(&uri, &EsrOptions::offline()).unwrap();
         assert!(parsed.is_identity());
         assert_eq!(
             parsed.callback.as_deref(),
@@ -186,7 +180,7 @@ mod tests {
                 app_name: "wharfkit".into(),
                 user_agent: String::new(),
             },
-            &opts(),
+            &EsrOptions::offline(),
             priv_key,
             pub_key.clone(),
         )

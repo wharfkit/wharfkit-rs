@@ -105,13 +105,6 @@ mod tests {
     use antelope::chain::time::TimePointSec;
     use antelope::chain::transaction::{Transaction, TransactionHeader};
     use antelope::chain::varint::VarUint32;
-    use std::sync::Arc;
-    use wharfkit_abicache::ABICache;
-
-    fn opts() -> EsrOptions {
-        EsrOptions::new(Arc::new(ABICache::new_offline()))
-    }
-
     #[tokio::test]
     async fn get_identity_proof_recovers_signer_key() {
         // Deterministic WIF for stable test output.
@@ -127,7 +120,7 @@ mod tests {
                 callback: None,
                 expiration: None,
             },
-            &opts(),
+            &EsrOptions::offline(),
         )
         .unwrap();
         let ctx = ResolveContext {
@@ -170,9 +163,14 @@ mod tests {
         let signer =
             PermissionLevel::new(Name::new_from_str("alice"), Name::new_from_str("active"));
 
-        let req =
-            SigningRequest::create_identity(Checksum256::default(), None, None, None, &opts())
-                .unwrap();
+        let req = SigningRequest::create_identity(
+            Checksum256::default(),
+            None,
+            None,
+            None,
+            &EsrOptions::offline(),
+        )
+        .unwrap();
         assert_eq!(req.actions[0].authorization[0].actor.n, 1);
         assert_eq!(req.actions[0].authorization[0].permission.n, 2);
 

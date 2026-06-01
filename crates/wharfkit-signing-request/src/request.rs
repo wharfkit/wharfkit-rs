@@ -717,13 +717,6 @@ fn alias_to_chain_id(alias: u8) -> Option<Checksum256> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
-    use wharfkit_abicache::ABICache;
-
-    fn opts() -> EsrOptions {
-        EsrOptions::new(Arc::new(ABICache::new_offline()))
-    }
-
     #[test]
     fn encode_decode_roundtrip_no_actions() {
         let req = SigningRequest::create(
@@ -733,13 +726,13 @@ mod tests {
                 callback: None,
                 expiration: None,
             },
-            &opts(),
+            &EsrOptions::offline(),
         )
         .unwrap();
         let uri = req.encode(true, false, "esr:").unwrap();
         assert!(uri.starts_with("esr:"));
         assert!(!uri.starts_with("esr://"));
-        let parsed = SigningRequest::from_uri(&uri, &opts()).unwrap();
+        let parsed = SigningRequest::from_uri(&uri, &EsrOptions::offline()).unwrap();
         assert_eq!(parsed.actions.len(), 0);
     }
 
@@ -755,12 +748,12 @@ mod tests {
                 }),
                 expiration: None,
             },
-            &opts(),
+            &EsrOptions::offline(),
         )
         .unwrap();
         let uri = req.encode(false, true, "esr:").unwrap();
         assert!(uri.starts_with("esr://"));
-        let parsed = SigningRequest::from_uri(&uri, &opts()).unwrap();
+        let parsed = SigningRequest::from_uri(&uri, &EsrOptions::offline()).unwrap();
         assert_eq!(
             parsed.callback.as_deref(),
             Some("https://cb.anchor.link/uuid")
@@ -779,7 +772,7 @@ mod tests {
                 }),
                 expiration: None,
             },
-            &opts(),
+            &EsrOptions::offline(),
         )
         .unwrap();
         assert_eq!(req.flags & 0x02, 0x02);
@@ -787,7 +780,7 @@ mod tests {
 
     #[test]
     fn invalid_uri_errors() {
-        let err = SigningRequest::from_uri("not-an-esr-uri", &opts()).unwrap_err();
+        let err = SigningRequest::from_uri("not-an-esr-uri", &EsrOptions::offline()).unwrap_err();
         assert!(matches!(err, EsrError::InvalidUri(_)));
     }
 
@@ -800,7 +793,7 @@ mod tests {
                 callback: None,
                 expiration: None,
             },
-            &opts(),
+            &EsrOptions::offline(),
         )
         .unwrap();
         req.set_info_key("comment", "first").unwrap();
@@ -819,7 +812,7 @@ mod tests {
                 callback: None,
                 expiration: None,
             },
-            &opts(),
+            &EsrOptions::offline(),
         )
         .unwrap();
         let ctx = ResolveContext {
@@ -842,7 +835,7 @@ mod tests {
                 callback: None,
                 expiration: None,
             },
-            &opts(),
+            &EsrOptions::offline(),
         )
         .unwrap();
         let mut head_id = [0u8; 32];
@@ -863,7 +856,8 @@ mod tests {
     fn ts_identity_uri_decodes() {
         let ts_uri =
             "esr://g2NgZGYAgoaXEr0MDIoZJSUFxVb6-slJeol5yRn5RXo5mXnZ-jn56Zl5uqWlmSmM7Mn5ubmpeSUi5RmJRWnZmSW66fkp-SUKYCUA";
-        let req = SigningRequest::from_uri(ts_uri, &opts()).expect("decode TS identity URI");
+        let req = SigningRequest::from_uri(ts_uri, &EsrOptions::offline())
+            .expect("decode TS identity URI");
         assert!(req.is_identity(), "decoded variant should be Identity");
         assert_eq!(
             req.callback.as_deref(),
@@ -883,7 +877,8 @@ mod tests {
     #[test]
     fn ts_transact_single_uri_decodes() {
         let ts_uri = "esr://gmMsfmIRpc7x7DpLh8nvg-zz9VdvrLYRihbJ-mIxXW5CYY4vA8OyJhPmVwahDAwM4bo2Z88yMoBAa4wJiFrx1sjIGlmAgYHPVkAdwmJx9Q8G0VIZqTk5-QppRfm5CsU5mcmpukYKaZkVJaVFqYwqGSUlBcVW-vrJSXqJeckZ-UV6OZl52folRYl5xYnJJbqlpZkpDAA";
-        let req = SigningRequest::from_uri(ts_uri, &opts()).expect("decode TS single-action URI");
+        let req = SigningRequest::from_uri(ts_uri, &EsrOptions::offline())
+            .expect("decode TS single-action URI");
         assert_eq!(req.actions.len(), 1);
         assert_eq!(req.actions[0].account.to_string(), "eosio.token");
         assert_eq!(req.actions[0].name.to_string(), "transfer");
@@ -896,15 +891,16 @@ mod tests {
     #[test]
     fn ts_transact_multi_uri_decodes() {
         let ts_uri = "esr://gmMsfmIRpc7x7DpLh8nvg-zz9VdvrLYRihbJ-mIxXW5CYY4vIxPDsiYT5lcGoQwMDOG6NmfPMjKAQGuMCYha8dbISA1ZgIGBz1ZAHcJicfUPBtGsaZlFxSUEzVFHFmjwWO-o4IdqDltxanJ-XgqjYkZJSUGxlb5-cpJeYl5yRn6RXk5mXrZ-bmlOSaZuaWlmCgMA";
-        let req = SigningRequest::from_uri(ts_uri, &opts()).expect("decode TS multi-action URI");
+        let req = SigningRequest::from_uri(ts_uri, &EsrOptions::offline())
+            .expect("decode TS multi-action URI");
         assert_eq!(req.actions.len(), 2);
     }
 
     #[test]
     fn ts_callback_template_uri_decodes() {
         let ts_uri = "esr://gmMsfmIRpc7x7DpLh8nvg-zz9VdvrLYRihbJ-mIxXW5CYY4vA8OyJhPmVwahDAwM4bo2Z88yMoBAa4wJiFrx1sjIGlmAgYHPVkAdwmJx9Q8G0VIZqTk5-QppRfm5CsU5mcmpukYKaZkVJaVFqYxGGSUlBcVW-vrJSXqJeckZ-UV6OZl52frV1cWZ6bW19iUVttXVJRW1tWpJeUBWUl5tLQMA";
-        let req =
-            SigningRequest::from_uri(ts_uri, &opts()).expect("decode TS callback-template URI");
+        let req = SigningRequest::from_uri(ts_uri, &EsrOptions::offline())
+            .expect("decode TS callback-template URI");
         assert_eq!(
             req.callback.as_deref(),
             Some("https://cb.anchor.link/{{sig}}?tx={{tx}}&bn={{bn}}")
