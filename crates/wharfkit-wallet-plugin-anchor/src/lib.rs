@@ -8,6 +8,6 @@ pub mod plugin;
 pub mod sealed;
 pub mod sign_flow;
 
-pub use data::AnchorWalletData;
+pub use data::{AnchorChannelState, AnchorWalletData};
 pub use plugin::AnchorWalletPlugin;
 pub use sealed::{SealError, SealedMessage};

@@ -1,5 +1,6 @@
 use antelope::chain::key_type::KeyType;
 use antelope::chain::private_key::PrivateKey;
+use antelope::chain::public_key::PublicKey;
 use async_trait::async_trait;
 use std::sync::{Arc, Mutex};
 use wharfkit_buoy_client::{BuoyTransport, ReqwestBuoyTransport};
@@ -11,7 +12,7 @@ use wharfkit_session::{
 };
 use wharfkit_signing_request::ResolvedSigningRequest;
 
-use crate::data::AnchorWalletData;
+use crate::data::{AnchorChannelState, AnchorWalletData};
 
 pub const DEFAULT_BUOY_URL: &str = "https://cb.anchor.link";
 
@@ -60,6 +61,49 @@ impl AnchorWalletPlugin {
 
     pub fn set_data(&self, data: AnchorWalletData) {
         *self.data.lock().unwrap() = data;
+    }
+
+    /// Persists the channel keypair into the plugin's data snapshot.
+    pub fn set_channel_keys(&self, request_key: PublicKey, private_wif: String) {
+        let mut data = self.data.lock().unwrap();
+        data.request_key = Some(request_key.as_string());
+        data.private_key = Some(private_wif);
+    }
+
+    /// Returns a typed projection of the established Anchor channel.
+    pub fn channel_state(&self) -> Option<AnchorChannelState> {
+        self.try_channel_state().ok().flatten()
+    }
+
+    /// Returns a typed projection of the established Anchor channel.
+    ///
+    /// `Ok(None)` means no channel has been established yet. `Err` means
+    /// persisted channel data exists but no longer parses as key material.
+    pub fn try_channel_state(&self) -> Result<Option<AnchorChannelState>, WalletError> {
+        let data = self.data.lock().unwrap();
+        let Some(channel_url) = data.channel_url.clone() else {
+            return Ok(None);
+        };
+        let Some(signer_key_str) = data.signer_key.clone() else {
+            return Ok(None);
+        };
+        let Some(private_wif) = data.private_key.clone() else {
+            return Ok(None);
+        };
+        let signer_key = PublicKey::new_from_str(&signer_key_str).map_err(|e| {
+            WalletError::Internal(format!("invalid Anchor channel signer_key: {e}"))
+        })?;
+        let private_key = PrivateKey::from_str(&private_wif, false).map_err(|e| {
+            WalletError::Internal(format!("invalid Anchor channel private_key: {e}"))
+        })?;
+        Ok(Some(AnchorChannelState {
+            channel_url,
+            signer_key,
+            private_key,
+            same_device: data.same_device,
+            launch_url: data.launch_url.clone(),
+            channel_name: data.channel_name.clone(),
+        }))
     }
 }
 
