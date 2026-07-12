@@ -9,4 +9,4 @@ Crates:
 
 Built on top of [`antelope-client`](https://github.com/telosnetwork/antelope-rs), the Antelope Rust client maintained by the [Telos Network](https://www.telos.net/).
 
-License: AGPL-3.0-or-later (see [LICENSE](./LICENSE))
+License: MPL-2.0 (see [LICENSE](./LICENSE))
