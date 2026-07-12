@@ -108,4 +108,5 @@ pub struct TransactContext {
     pub permission_level: PermissionLevel,
     pub client: ChainClient,
     pub hooks: TransactHooks,
+    pub return_path: Option<String>,
 }

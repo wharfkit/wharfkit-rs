@@ -5,6 +5,7 @@
 pub mod data;
 pub mod login_flow;
 pub mod plugin;
+mod same_device;
 pub mod sealed;
 pub mod sign_flow;
 

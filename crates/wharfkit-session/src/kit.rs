@@ -29,6 +29,8 @@ pub struct SessionKitArgs {
     pub abi_cache: Arc<ABICache>,
     pub login_plugins: Vec<Arc<dyn LoginPlugin>>,
     pub transact_plugins: Vec<Arc<dyn TransactPlugin>>,
+    /// Deep-link URI wallets should return to after login/sign, e.g. for iOS same-device Anchor.
+    pub return_path: Option<String>,
 }
 
 #[derive(Default)]
@@ -85,6 +87,7 @@ impl SessionKit {
             self.args.platform.clone(),
             self.args.client.clone(),
             self.args.abi_cache.clone(),
+            self.args.return_path.clone(),
         )
     }
 

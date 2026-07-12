@@ -36,6 +36,7 @@ fn build_kit(mock_chain: Arc<MockChain>) -> SessionKit {
         abi_cache,
         login_plugins: vec![],
         transact_plugins: vec![],
+        return_path: None,
     })
 }
 

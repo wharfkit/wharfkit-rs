@@ -21,6 +21,7 @@ use wharfkit_signing_request::{
 
 use crate::data::AnchorWalletData;
 use crate::plugin::AnchorWalletPlugin;
+use crate::same_device::apply_ios_same_device_info;
 
 pub const DEFAULT_LOGIN_TIMEOUT_SECS: u64 = 120;
 
@@ -44,7 +45,13 @@ pub async fn run_login(
         .and_then(|v| v.as_str())
         .unwrap_or("")
         .to_string();
-    let identity = IdentityRequest::create_with_keypair(
+    let return_path = ctx
+        .arbitrary
+        .get("return_path")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    let mut identity = IdentityRequest::create_with_keypair(
         IdentityRequestArgs {
             chain_id,
             buoy_url: plugin.buoy_url.clone(),
@@ -56,6 +63,11 @@ pub async fn run_login(
         private_key.clone(),
         request_key.clone(),
     )?;
+
+    // Without this, Anchor stays foregrounded on iOS after approval instead of returning to the app.
+    if ctx.platform.is_apple_handheld() {
+        apply_ios_same_device_info(&mut identity.same_device_request, return_path.as_deref());
+    }
 
     {
         let mut data = plugin.data.lock().unwrap();

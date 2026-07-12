@@ -1,6 +1,10 @@
+use antelope::chain::action::Action;
+use antelope::chain::checksum::Checksum256;
 use antelope::chain::private_key::PrivateKey;
 use antelope::chain::public_key::PublicKey;
 use antelope::chain::signature::Signature;
+use antelope::chain::time::TimePointSec;
+use antelope::chain::{Encoder, Packer};
 use futures_util::StreamExt;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -12,13 +16,18 @@ use wharfkit_session::{
     WalletPluginSignResponse,
 };
 use wharfkit_signing_request::{
-    CallbackPayload, CallbackSpec, ResolvedSigningRequest, SigningRequest, SigningRequestCreateArgs,
+    CallbackPayload, CallbackSpec, EsrOptions, LinkInfo, ResolvedSigningRequest, SigningRequest,
+    SigningRequestCreateArgs,
 };
 
 use crate::plugin::AnchorWalletPlugin;
+use crate::same_device::apply_ios_same_device_info;
 use crate::sealed::{pack_sealed_message, seal, SealedMessage};
 
 pub const DEFAULT_SIGN_TIMEOUT_SECS: u64 = 120;
+
+/// Expiration window, in seconds, for the `link` info key that wakes iOS Anchor's `?v=2` listener.
+pub const LINK_INFO_EXPIRATION_SECS: u32 = 120;
 
 pub async fn run_sign(
     plugin: &AnchorWalletPlugin,
@@ -46,17 +55,13 @@ pub async fn run_sign(
     let sign_uuid = Uuid::new_v4();
     let sign_callback_url = format!("{}/{}", plugin.buoy_url.trim_end_matches('/'), sign_uuid);
 
-    let request_with_cb = SigningRequest::create(
-        SigningRequestCreateArgs {
-            chain_id: resolved.chain_id,
-            actions: resolved.transaction.actions.clone(),
-            callback: Some(CallbackSpec {
-                url: sign_callback_url.clone(),
-                background: true,
-            }),
-            expiration: None,
-        },
+    let request_with_cb = build_sign_request(
+        resolved.chain_id,
+        resolved.transaction.actions.clone(),
+        &sign_callback_url,
         &ctx.esr_options,
+        ctx.platform.is_apple_handheld(),
+        ctx.return_path.as_deref(),
     )?;
     let sign_uri = request_with_cb
         .encode(true, false, "esr:")
@@ -102,6 +107,49 @@ pub async fn run_sign(
     };
 
     parse_sign_callback(&payload_bytes)
+}
+
+pub(crate) fn build_sign_request(
+    chain_id: Checksum256,
+    actions: Vec<Action>,
+    sign_callback_url: &str,
+    esr_options: &EsrOptions,
+    is_apple_handheld: bool,
+    return_path: Option<&str>,
+) -> Result<SigningRequest, WalletError> {
+    let mut request = SigningRequest::create(
+        SigningRequestCreateArgs {
+            chain_id,
+            actions,
+            callback: Some(CallbackSpec {
+                url: sign_callback_url.to_string(),
+                background: true,
+            }),
+            expiration: None,
+        },
+        esr_options,
+    )?;
+    // Otherwise Anchor also broadcasts, and our own broadcast fails with tx_duplicate.
+    request.set_broadcast(false);
+    if is_apple_handheld {
+        apply_ios_same_device_info(&mut request, return_path);
+    }
+    attach_link_info(&mut request);
+    Ok(request)
+}
+
+/// Without `info["link"]`, iOS Anchor's `?v=2` channel listener never wakes for the sealed message.
+fn attach_link_info(request: &mut SigningRequest) {
+    let now_unix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as u32)
+        .unwrap_or(0);
+    let link_info = LinkInfo {
+        expiration: TimePointSec::new(now_unix.saturating_add(LINK_INFO_EXPIRATION_SECS)),
+    };
+    let mut enc = Encoder::new(link_info.size());
+    link_info.pack(&mut enc);
+    request.set_info_bytes("link", enc.get_bytes().to_vec());
 }
 
 pub async fn send_sealed_to_anchor_channel(
@@ -247,6 +295,49 @@ fn extract_signatures(payload: &CallbackPayload) -> Result<Vec<Signature>, Walle
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn sign_request(is_apple_handheld: bool, return_path: Option<&str>) -> SigningRequest {
+        build_sign_request(
+            Checksum256::default(),
+            vec![],
+            "https://cb.example/uuid",
+            &EsrOptions::offline(),
+            is_apple_handheld,
+            return_path,
+        )
+        .expect("build_sign_request")
+    }
+
+    #[test]
+    fn built_sign_request_disables_broadcast() {
+        assert!(!sign_request(false, None).broadcast());
+    }
+
+    #[test]
+    fn built_sign_request_carries_link_info() {
+        let request = sign_request(false, None);
+        assert!(request.info.iter().any(|kv| kv.key == "link"));
+    }
+
+    #[test]
+    fn built_sign_request_on_ios_sets_same_device_and_return_path() {
+        let request = sign_request(true, Some("myapp://callback"));
+        assert!(request.info.iter().any(|kv| kv.key == "same_device"));
+        assert!(request.info.iter().any(|kv| kv.key == "return_path"));
+    }
+
+    #[test]
+    fn built_sign_request_on_ios_sets_same_device_without_return_path() {
+        let request = sign_request(true, None);
+        assert!(request.info.iter().any(|kv| kv.key == "same_device"));
+        assert!(!request.info.iter().any(|kv| kv.key == "return_path"));
+    }
+
+    #[test]
+    fn built_sign_request_on_non_ios_omits_same_device() {
+        let request = sign_request(false, Some("myapp://callback"));
+        assert!(!request.info.iter().any(|kv| kv.key == "same_device"));
+    }
 
     #[test]
     fn sign_prompt_has_countdown_and_link() {

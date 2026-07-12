@@ -27,6 +27,7 @@ pub struct Session {
     platform: Arc<dyn Platform>,
     client: ChainClient,
     abi_cache: Arc<ABICache>,
+    return_path: Option<String>,
 }
 
 impl Session {
@@ -39,6 +40,7 @@ impl Session {
         platform: Arc<dyn Platform>,
         client: ChainClient,
         abi_cache: Arc<ABICache>,
+        return_path: Option<String>,
     ) -> Self {
         Self {
             chain,
@@ -48,6 +50,7 @@ impl Session {
             platform,
             client,
             abi_cache,
+            return_path,
         }
     }
 
@@ -86,6 +89,7 @@ impl Session {
             permission_level: self.permission_level,
             client: self.client.clone(),
             hooks,
+            return_path: self.return_path.clone(),
         }
     }
 
